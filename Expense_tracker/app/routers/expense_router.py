@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException,status
 from fastapi.params import Depends
-from sentry_sdk import session
 from sqlalchemy.orm import Session
 
 from Expense_tracker.app.core.database import get_db
@@ -8,9 +7,7 @@ from Expense_tracker.app.schema.apiresponse_schema import ApiResponse
 from Expense_tracker.app.schema.expense_schema import ExpenseRequestDto,ExpenseResponseDto
 from Expense_tracker.app.models.expense_model import ExpenseModel
 
-expense_router = APIRouter(
-    prefix="/expense",
-)
+expense_router = APIRouter(prefix="/expense", tags=["Expense"])
 
 
 #add expense
@@ -29,6 +26,20 @@ def create_expenses(expense_request_dto: ExpenseRequestDto,db: Session = Depends
         }
     )
 
+@expense_router.get("/getAll" , response_model=ApiResponse)
+def get_all_expenses(db: Session = Depends(get_db)) -> ApiResponse:
+    expenses = db.query(ExpenseModel).filter(ExpenseModel.show==True).all()
+    if not expenses:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND , detail="Expense not found")
+    else:
+        return ApiResponse(
+            status="success",
+            message="Expenses found successfully",
+            data={
+                "All_expenses": [ExpenseResponseDto.model_validate(expense)
+                                 for expense in expenses]
+            }
+        )
 @expense_router.get("/search",response_model=ApiResponse,status_code=status.HTTP_200_OK)
 def search_by_title(title: str, db: Session = Depends(get_db))-> ApiResponse:
     expense=db.query(ExpenseModel).filter(ExpenseModel.title.ilike(f"%{title}%")).all()
