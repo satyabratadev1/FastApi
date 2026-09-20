@@ -6,8 +6,10 @@ from Expense_tracker.app.core.database import Base,engine
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
+#This initiates the database creation for us
 
 app.include_router(expense_router)
+#This would add the external router to the main app
 
 
 @app.get("/")
